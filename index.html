@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nexus — Dynamic Dashboard</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-primary:   #0a0c10;
+      --bg-secondary: #0f1318;
+      --bg-card:      #13181f;
+      --bg-card-hover:#181f28;
+      --border:       #1e2730;
+      --border-light: #2a3441;
+      --accent:       #4fffb0;
+      --accent-dim:   #1a5c40;
+      --accent-glow:  rgba(79,255,176,0.15);
+      --text-primary: #e8edf3;
+      --text-secondary:#7a8a9a;
+      --text-muted:   #3a4a5a;
+      --danger:       #ff4d6d;
+      --warning:      #ffba49;
+      --blue:         #4da6ff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+    /* ── BACKGROUND GRID ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body > * { position: relative; z-index: 1; }
+
+    /* ── NAV ── */
+    .navbar {
+      background: rgba(10,12,16,0.85) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .navbar-brand {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.35rem;
+      color: var(--text-primary) !important;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border-light);
+    }
+
+    .nav-link {
+      color: var(--text-secondary) !important;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.9rem !important;
+      border-radius: 6px;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--text-primary) !important;
+      background: var(--bg-card);
+    }
+
+    .search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .search-wrap input {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 0.42rem 1rem;
+      font-size: 0.82rem;
+      font-family: 'DM Sans', sans-serif;
+      width: 200px;
+      transition: all 0.25s;
+    }
+
+    .search-wrap input::placeholder { color: var(--text-muted); }
+    .search-wrap input:focus {
+      outline: none;
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 3px rgba(79,255,176,0.08);
+      background: var(--bg-secondary);
+      width: 240px;
+    }
+
+    .btn-search {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 0.42rem 1rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-search:hover { background: #5fffba; transform: translateY(-1px); }
+
+    /* ── HERO BANNER ── */
+    .hero {
+      position: relative;
+      height: 360px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 120%, rgba(79,255,176,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 10% 50%, rgba(77,166,255,0.07) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 50% at 90% 50%, rgba(79,255,176,0.05) 0%, transparent 50%);
+    }
+
+    .hero-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-dim), var(--accent), var(--accent-dim), transparent);
+      animation: scanline 3s ease-in-out infinite;
+    }
+
+    @keyframes scanline {
+      0%,100% { opacity: 0.4; transform: scaleX(0.9); }
+      50% { opacity: 1; transform: scaleX(1); }
+    }
+
+    .hero-content {
+      text-align: center;
+      z-index: 2;
+      padding: 0 1.5rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(79,255,176,0.08);
+      border: 1px solid var(--accent-dim);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+      animation: fadeInDown 0.6s ease both;
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      color: var(--text-primary);
+      animation: fadeInUp 0.7s ease 0.1s both;
+    }
+
+    .hero-title span {
+      background: linear-gradient(120deg, var(--accent) 0%, var(--blue) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-top: 0.75rem;
+      font-weight: 300;
+      animation: fadeInUp 0.7s ease 0.2s both;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity:0; transform:translateY(-12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(16px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── SECTION WRAPPER ── */
+    .section { padding: 3.5rem 0; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+
+    .section-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .section-icon.green { background: rgba(79,255,176,0.1); color: var(--accent); }
+    .section-icon.blue  { background: rgba(77,166,255,0.1); color: var(--blue); }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.35rem;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+    }
+
+    .section-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border-light), transparent);
+    }
+
+    /* ── CRUD FORM ── */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .form-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-dim), var(--accent), var(--accent-dim), transparent);
+    }
+
+    .form-label-custom {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .input-custom {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      color: var(--text-primary);
+      border-radius: 10px;
+      padding: 0.65rem 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      width: 100%;
+      transition: all 0.25s;
+    }
+
+    .input-custom::placeholder { color: var(--text-muted); }
+
+    .input-custom:focus {
+      outline: none;
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 3px rgba(79,255,176,0.08);
+      background: var(--bg-primary);
+    }
+
+    .btn-add {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 0.65rem 1.75rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.22s;
+    }
+
+    .btn-add:hover {
+      background: #5fffba;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(79,255,176,0.25);
+    }
+
+    .btn-add:active { transform: translateY(0); }
+
+    /* ── FETCH CARDS ── */
+    .fetch-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      height: 100%;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .fetch-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      transition: all 0.25s;
+      pointer-events: none;
+    }
+
+    .fetch-card:hover {
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+
+    .fetch-card:hover::after {
+      border-color: var(--border-light);
+    }
+
+    .card-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.65rem;
+    }
+
+    .card-title-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+      margin-bottom: 0.6rem;
+      letter-spacing: -0.01em;
+    }
+
+    .card-body-text {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      font-weight: 300;
+    }
+
+    /* ── CRUD ITEM CARDS ── */
+    .crud-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.4rem 1.5rem;
+      height: 100%;
+      transition: all 0.25s;
+      position: relative;
+    }
+
+    .crud-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-light);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    }
+
+    .crud-card-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text-primary);
+      letter-spacing: -0.015em;
+      margin-bottom: 0.45rem;
+    }
+
+    .crud-card-desc {
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-weight: 300;
+      margin-bottom: 1.1rem;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-edit, .btn-delete {
+      border: none;
+      border-radius: 8px;
+      padding: 0.38rem 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .btn-edit {
+      background: rgba(255,186,73,0.12);
+      color: var(--warning);
+      border: 1px solid rgba(255,186,73,0.2);
+    }
+
+    .btn-edit:hover {
+      background: rgba(255,186,73,0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn-delete {
+      background: rgba(255,77,109,0.10);
+      color: var(--danger);
+      border: 1px solid rgba(255,77,109,0.18);
+    }
+
+    .btn-delete:hover {
+      background: rgba(255,77,109,0.2);
+      transform: translateY(-1px);
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 3.5rem 1rem;
+      border: 1px dashed var(--border-light);
+      border-radius: 14px;
+      background: var(--bg-secondary);
+    }
+
+    .empty-state i {
+      font-size: 2.5rem;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 0.8rem;
+    }
+
+    .empty-state p {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    /* ── SKELETON LOADER ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-line { height: 14px; margin-bottom: 8px; }
+    .skeleton-line:last-child { width: 70%; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 0;
+    }
+
+    .footer-brand {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.3rem;
+    }
+
+    .footer-text {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .footer-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.82rem;
+      transition: color 0.2s;
+    }
+
+    .footer-link:hover { color: var(--accent); }
+
+    .footer-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    .footer-copy {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .footer-social a {
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .footer-social a:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    /* ── CARD ITEM ANIMATION ── */
+    .card-item {
+      animation: cardIn 0.35s ease both;
+    }
+
+    @keyframes cardIn {
+      from { opacity:0; transform:scale(0.97) translateY(8px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+
+    /* ── TOAST ── */
+    .toast-container-custom {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast-msg {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      animation: toastIn 0.3s ease;
+      min-width: 240px;
+    }
+
+    .toast-msg .toast-icon { font-size: 1rem; }
+    .toast-msg.success .toast-icon { color: var(--accent); }
+    .toast-msg.error   .toast-icon { color: var(--danger); }
+    .toast-msg.info    .toast-icon { color: var(--blue); }
+
+    @keyframes toastIn {
+      from { opacity:0; transform:translateX(20px); }
+      to   { opacity:1; transform:translateX(0); }
+    }
+
+    /* ── NAVBAR TOGGLER ── */
+    .navbar-toggler {
+      border-color: var(--border-light) !important;
+    }
+    .navbar-toggler-icon {
+      filter: invert(0.7);
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ================= NAVIGATION ================= -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container">
+    <a class="navbar-brand" href="#">
+      <img src="images.jpeg" alt="Logo" class="brand-logo">
+      Nexus
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-3">
+        <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Blogs</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+      </ul>
+      <div class="search-wrap mt-2 mt-lg-0">
+        <input type="search" placeholder="Search...">
+        <button class="btn-search"><i class="bi bi-search"></i> Search</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+<!-- ================= HERO ================= -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Live Dashboard
+    </div>
+    <h1 class="hero-title">Dynamic Website<br>with <span>Bootstrap & CRUD</span></h1>
+    <p class="hero-sub">Powered by Fetch API &nbsp;·&nbsp; LocalStorage &nbsp;·&nbsp; Bootstrap 5</p>
+  </div>
+  <div class="hero-line"></div>
+</div>
+
+
+<!-- ================= CRUD FORM ================= -->
+<div class="section">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon green"><i class="bi bi-plus-lg"></i></div>
+      <div>
+        <div class="section-title">Add New Item</div>
+        <div class="section-subtitle">CRUD using LocalStorage</div>
+      </div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="form-card">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label-custom">Title</label>
+          <input type="text" id="titleInput" class="input-custom" placeholder="e.g. Project Alpha">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label-custom">Description</label>
+          <input type="text" id="descInput" class="input-custom" placeholder="e.g. A short description of the item">
+        </div>
+        <div class="col-md-3">
+          <button class="btn-add" onclick="addItem()">
+            <i class="bi bi-plus-circle-fill"></i>
+            Add Item
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================= FETCH API CARDS ================= -->
+<div class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon blue"><i class="bi bi-cloud-download"></i></div>
+      <div>
+        <div class="section-title">Live Posts</div>
+        <div class="section-subtitle">Dynamic data via Fetch API — 12 items</div>
+      </div>
+      <div class="section-line"></div>
+      <span id="fetchStatus" style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;"></span>
+    </div>
+
+    <div class="row g-3" id="fetchCards">
+      <!-- Skeleton loaders -->
+      <div class="col-md-4 mb-1" id="sk1">
+        <div class="fetch-card"><div class="skeleton skeleton-line w-50 mb-3"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>
+      </div>
+      <div class="col-md-4 mb-1" id="sk2">
+        <div class="fetch-card"><div class="skeleton skeleton-line w-50 mb-3"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>
+      </div>
+      <div class="col-md-4 mb-1" id="sk3">
+        <div class="fetch-card"><div class="skeleton skeleton-line w-50 mb-3"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div><div class="skeleton skeleton-line"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================= CRUD DISPLAY ================= -->
+<div class="section" style="padding-top:0; padding-bottom:0;">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-icon green"><i class="bi bi-collection"></i></div>
+      <div>
+        <div class="section-title">Your Items</div>
+        <div class="section-subtitle">Saved in LocalStorage</div>
+      </div>
+      <div class="section-line"></div>
+      <span id="itemCount" style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;"></span>
+    </div>
+
+    <div class="row g-3" id="crudCards"></div>
+  </div>
+</div>
+
+
+<!-- ================= FOOTER ================= -->
+<footer class="mt-5">
+  <div class="container">
+    <div class="row align-items-start g-4">
+      <div class="col-md-4">
+        <div class="footer-brand d-flex align-items-center gap-2">
+          <img src="images.jpeg" alt="Logo" style="width:28px;height:28px;border-radius:6px;object-fit:cover;border:1px solid var(--border-light);">
+          Nexus
+        </div>
+        <div class="footer-text">A dynamic dashboard built with Bootstrap 5, Fetch API, and LocalStorage CRUD.</div>
+        <div class="footer-social mt-3 d-flex gap-2">
+          <a href="#"><i class="bi bi-twitter-x"></i></a>
+          <a href="#"><i class="bi bi-github"></i></a>
+          <a href="#"><i class="bi bi-linkedin"></i></a>
+          <a href="#"><i class="bi bi-globe"></i></a>
+        </div>
+      </div>
+      <div class="col-md-2 offset-md-2">
+        <div style="font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem;">Pages</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="#" class="footer-link">Home</a>
+          <a href="#" class="footer-link">About</a>
+          <a href="#" class="footer-link">Blogs</a>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div style="font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem;">Support</div>
+        <div class="d-flex flex-column gap-2">
+          <a href="#" class="footer-link">Contact</a>
+          <a href="#" class="footer-link">Docs</a>
+          <a href="#" class="footer-link">GitHub</a>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div style="font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem;">Contact</div>
+        <div class="d-flex flex-column gap-2">
+          <span class="footer-text">support@nexus.dev</span>
+          <span class="footer-text">+91 98765 43210</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="footer-divider">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+      <span class="footer-copy">© 2025 Nexus. All rights reserved.</span>
+      <span class="footer-copy">Designed with Bootstrap 5 &nbsp;·&nbsp; Fetch API &nbsp;·&nbsp; LocalStorage</span>
+    </div>
+  </div>
+</footer>
+
+
+<!-- ================= TOAST CONTAINER ================= -->
+<div class="toast-container-custom" id="toastContainer"></div>
+
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+
+/* ── TOAST UTILITY ── */
+function showToast(msg, type = 'success') {
+  const icons = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', info: 'bi-info-circle-fill' };
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast-msg ${type}`;
+  t.innerHTML = `<i class="bi ${icons[type]} toast-icon"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.animation = 'toastIn 0.3s ease reverse';
+    setTimeout(() => t.remove(), 280);
+  }, 2800);
+}
+
+/* ══════════════════════════════════════════════
+   FETCH API — Load 12 Dynamic Boxes
+══════════════════════════════════════════════ */
+const fetchStatus = document.getElementById('fetchStatus');
+fetchStatus.textContent = 'Fetching…';
+
+fetch('https://jsonplaceholder.typicode.com/posts')
+  .then(res => res.json())
+  .then(data => {
+    const sliced = data.slice(0, 12);
+    const box = document.getElementById('fetchCards');
+    box.innerHTML = '';
+
+    sliced.forEach((post, i) => {
+      const num = String(i + 1).padStart(2, '0');
+      const col = document.createElement('div');
+      col.className = 'col-md-4 mb-1 card-item';
+      col.style.animationDelay = `${i * 0.04}s`;
+      col.innerHTML = `
+        <div class="fetch-card">
+          <div class="card-num">#${num}</div>
+          <div class="card-title-text">${post.title.substring(0, 36).trim()}…</div>
+          <div class="card-body-text">${post.body.substring(0, 80).trim()}…</div>
+        </div>`;
+      box.appendChild(col);
+    });
+
+    fetchStatus.textContent = `${sliced.length} items loaded`;
+    fetchStatus.style.color = 'var(--accent)';
+  })
+  .catch(() => {
+    document.getElementById('fetchCards').innerHTML = `<div class="col-12"><div class="empty-state"><i class="bi bi-wifi-off"></i><p>Could not load posts. Check your connection.</p></div></div>`;
+    fetchStatus.textContent = 'Failed';
+    fetchStatus.style.color = 'var(--danger)';
+  });
+
+
+/* ══════════════════════════════════════════════
+   CRUD — Local Storage
+══════════════════════════════════════════════ */
+const STORAGE_KEY = 'nexusItems';
+
+function loadData() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function displayItems() {
+  const area = document.getElementById('crudCards');
+  const items = loadData();
+  const counter = document.getElementById('itemCount');
+  counter.textContent = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : '';
+
+  if (!items.length) {
+    area.innerHTML = `
+      <div class="col-12">
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <p>No items yet — add your first item above!</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  area.innerHTML = '';
+  items.forEach((item, index) => {
+    const col = document.createElement('div');
+    col.className = 'col-md-4 mb-1 card-item';
+    col.style.animationDelay = `${index * 0.05}s`;
+    col.innerHTML = `
+      <div class="crud-card">
+        <div class="crud-card-title">${escHtml(item.title)}</div>
+        <div class="crud-card-desc">${escHtml(item.desc)}</div>
+        <div class="card-actions">
+          <button class="btn-edit"    onclick="editItem(${index})">   <i class="bi bi-pencil"></i> Edit</button>
+          <button class="btn-delete"  onclick="deleteItem(${index})"> <i class="bi bi-trash3"></i> Delete</button>
+        </div>
+      </div>`;
+    area.appendChild(col);
+  });
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function addItem() {
+  const title = document.getElementById('titleInput').value.trim();
+  const desc  = document.getElementById('descInput').value.trim();
+
+  if (!title || !desc) {
+    showToast('Both fields are required!', 'error');
+    if (!title) document.getElementById('titleInput').style.borderColor = 'var(--danger)';
+    if (!desc)  document.getElementById('descInput').style.borderColor  = 'var(--danger)';
+    setTimeout(() => {
+      document.getElementById('titleInput').style.borderColor = '';
+      document.getElementById('descInput').style.borderColor  = '';
+    }, 1800);
+    return;
+  }
+
+  const items = loadData();
+  items.push({ id: Date.now(), title, desc });
+  saveData(items);
+  displayItems();
+
+  document.getElementById('titleInput').value = '';
+  document.getElementById('descInput').value  = '';
+  document.getElementById('crudCards').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  showToast(`"${title}" added successfully!`, 'success');
+}
+
+function editItem(index) {
+  const items = loadData();
+  const item  = items[index];
+
+  const newTitle = prompt('Edit Title:', item.title);
+  const newDesc  = prompt('Edit Description:', item.desc);
+
+  if (newTitle !== null && newDesc !== null && newTitle.trim() && newDesc.trim()) {
+    items[index].title = newTitle.trim();
+    items[index].desc  = newDesc.trim();
+    saveData(items);
+    displayItems();
+    showToast('Item updated!', 'info');
+  }
+}
+
+function deleteItem(index) {
+  if (confirm('Delete this item?')) {
+    const items = loadData();
+    const name = items[index].title;
+    items.splice(index, 1);
+    saveData(items);
+    displayItems();
+    showToast(`"${name}" deleted.`, 'error');
+  }
+}
+
+/* Enter key support */
+['titleInput','descInput'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') addItem();
+  });
+});
+
+displayItems();
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
